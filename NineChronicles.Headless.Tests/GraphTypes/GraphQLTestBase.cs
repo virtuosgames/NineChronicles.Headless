@@ -24,6 +24,9 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit.Abstractions;
+using RewardGold = NineChronicles.Headless.Tests.Common.Actions.EmptyAction;
+using Libplanet.Store.Trie;
+using Microsoft.AspNetCore.Http;
 using NCAction = Libplanet.Action.PolymorphicAction<Nekoyume.Action.ActionBase>;
 
 namespace NineChronicles.Headless.Tests.GraphTypes
@@ -32,11 +35,14 @@ namespace NineChronicles.Headless.Tests.GraphTypes
     {
         protected ITestOutputHelper _output;
 
+        protected readonly IHttpContextAccessor _httpContextAccessor;
+
         public GraphQLTestBase(ITestOutputHelper output)
         {
             Log.Logger = new LoggerConfiguration().MinimumLevel.Debug().WriteTo.Console().CreateLogger();
 
             _output = output;
+            _httpContextAccessor = new HttpContextAccessor();
 
             var goldCurrency = new Currency("NCG", 2, minter: null);
 
@@ -78,6 +84,8 @@ namespace NineChronicles.Headless.Tests.GraphTypes
 
             var services = new ServiceCollection();
             services.AddSingleton(StandaloneContextFx);
+            services.AddSingleton(StandaloneContextFx.KeyStore ?? GraphQLTestUtils.CreateRandomWeb3KeyStore());
+            services.AddSingleton(_httpContextAccessor);
             services.AddSingleton<IConfiguration>(configuration);
             services.AddGraphTypes();
             services.AddLibplanetExplorer<NCAction>();

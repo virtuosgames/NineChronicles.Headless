@@ -13,13 +13,23 @@ using System;
 using System.Collections.Generic;
 using Libplanet.Action;
 using NCAction = Libplanet.Action.PolymorphicAction<Nekoyume.Action.ActionBase>;
+using GraphQL.Server.Authorization.AspNetCore;
+using Libplanet.Explorer.GraphTypes;
+using Libplanet.Tx;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
+using NineChroniclesActionType = Libplanet.Action.PolymorphicAction<Nekoyume.Action.ActionBase>;
 
 namespace NineChronicles.Headless.GraphTypes
 {
     public class ActionMutation : ObjectGraphType
     {
-        public ActionMutation(NineChroniclesNodeService service)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+
+        public ActionMutation(NineChroniclesNodeService service, IHttpContextAccessor httpContextAccessor)
         {
+            _httpContextAccessor = httpContextAccessor;
+
             Field<NonNullGraphType<TxIdType>>("createAvatar",
                 description: "Create new avatar.",
                 arguments: new QueryArguments(
@@ -58,9 +68,9 @@ namespace NineChronicles.Headless.GraphTypes
                 {
                     try
                     {
-                        if (!(service.MinerPrivateKey is { } privateKey))
+                        if (!(_httpContextAccessor.HttpContext.Session.GetPrivateKey() is { } privateKey))
                         {
-                            throw new InvalidOperationException($"{nameof(service.MinerPrivateKey)} is null.");
+                            throw new InvalidOperationException("The session private key is null.");
                         }
 
                         if (!(service.Swarm?.BlockChain is { } blockChain))
@@ -273,12 +283,12 @@ namespace NineChronicles.Headless.GraphTypes
                 {
                     try
                     {
-                        if (!(service.MinerPrivateKey is { } privatekey))
+                        if (!(_httpContextAccessor.HttpContext.Session.GetPrivateKey() is { } privatekey))
                         {
-                            throw new InvalidOperationException($"{nameof(service.MinerPrivateKey)} is null.");
+                            throw new InvalidOperationException("The session private key is null.");
                         }
 
-                        if (!(service.Swarm?.BlockChain is { } blockChain))
+                        if (!(service.Swarm.BlockChain is { } blockChain))
                         {
                             throw new InvalidOperationException($"{nameof(service.Swarm.BlockChain)} is null.");
                         }
@@ -336,12 +346,12 @@ namespace NineChronicles.Headless.GraphTypes
                 {
                     try
                     {
-                        if (!(service.MinerPrivateKey is { } privateKey))
+                        if (!(_httpContextAccessor.HttpContext.Session.GetPrivateKey() is { } privateKey))
                         {
-                            throw new InvalidOperationException($"{nameof(service.MinerPrivateKey)} is null.");
+                            throw new InvalidOperationException("The session private key is null.");
                         }
 
-                        if (!(service.Swarm?.BlockChain is { } blockChain))
+                        if (!(service.Swarm.BlockChain is { } blockChain))
                         {
                             throw new InvalidOperationException($"{nameof(service.Swarm.BlockChain)} is null.");
                         }
@@ -393,12 +403,12 @@ namespace NineChronicles.Headless.GraphTypes
                 {
                     try
                     {
-                        if (!(service.MinerPrivateKey is { } privateKey))
+                        if (!(_httpContextAccessor.HttpContext.Session.GetPrivateKey() is { } privateKey))
                         {
-                            throw new InvalidOperationException($"{nameof(service.MinerPrivateKey)} is null.");
+                            throw new InvalidOperationException("The session private key is null.");
                         }
 
-                        if (!(service.Swarm?.BlockChain is { } blockChain))
+                        if (!(service.Swarm.BlockChain is { } blockChain))
                         {
                             throw new InvalidOperationException($"{nameof(service.Swarm.BlockChain)} is null.");
                         }
@@ -442,14 +452,14 @@ namespace NineChronicles.Headless.GraphTypes
                 {
                     try
                     {
-                        if (!(service.MinerPrivateKey is { } privateKey))
+                        if (!(_httpContextAccessor.HttpContext.Session.GetPrivateKey() is { } privateKey))
                         {
-                            throw new InvalidOperationException($"{nameof(service.MinerPrivateKey)} is null.");
+                            throw new InvalidOperationException("The session private key is null.");
                         }
 
                         if (!(service.BlockChain is { } blockChain))
                         {
-                            throw new InvalidOperationException($"{nameof(service.Swarm.BlockChain)} is null.");
+                            throw new InvalidOperationException($"{nameof(service.BlockChain)} is null.");
                         }
 
                         Address avatarAddress = context.GetArgument<Address>("avatarAddress");

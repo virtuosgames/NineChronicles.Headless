@@ -6,6 +6,7 @@ using Bencodex;
 using Bencodex.Types;
 using BTAI;
 using GraphQL;
+using GraphQL.Server.Authorization.AspNetCore;
 using GraphQL.Types;
 using Libplanet;
 using Libplanet.Action;

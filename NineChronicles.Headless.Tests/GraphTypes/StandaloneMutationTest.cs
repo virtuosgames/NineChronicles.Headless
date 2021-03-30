@@ -19,6 +19,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Bencodex.Types;
+using Microsoft.AspNetCore.Http;
 using Xunit;
 using Xunit.Abstractions;
 using NCAction = Libplanet.Action.PolymorphicAction<Nekoyume.Action.ActionBase>;
@@ -31,11 +32,19 @@ namespace NineChronicles.Headless.Tests.GraphTypes
 
         private readonly TableSheets? _tableSheets = null;
 
+        private readonly PrivateKey _privateKey;
+
         public StandaloneMutationTest(ITestOutputHelper output) : base(output)
         {
             var fixturePath = Path.Combine("..", "..", "..", "..", "Lib9c", ".Lib9c.Tests", "Data", "TableCSV");
             _sheets = TableSheetsImporter.ImportSheets(fixturePath);
             _tableSheets = new TableSheets(_sheets);
+            _privateKey = new PrivateKey();
+            _httpContextAccessor.HttpContext = new DefaultHttpContext
+            {
+                Session = new InMemorySession(string.Empty, true)
+            };
+            _httpContextAccessor.HttpContext.Session.SetPrivateKey(_privateKey);
         }
 
         [Fact]
