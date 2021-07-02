@@ -263,7 +263,7 @@ namespace NineChronicles.Headless.Executable
                     };
 
                     var graphQLService = new GraphQLService(graphQLNodeServiceProperties);
-                    hostBuilder = graphQLService.Configure(hostBuilder);
+                    hostBuilder = graphQLService.Configure(hostBuilder, standaloneContext);
                 }
 
                 var properties = NineChroniclesNodeServiceProperties

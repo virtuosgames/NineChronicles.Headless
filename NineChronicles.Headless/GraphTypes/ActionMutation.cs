@@ -14,8 +14,6 @@ using System.Collections.Generic;
 using Libplanet.Action;
 using NCAction = Libplanet.Action.PolymorphicAction<Nekoyume.Action.ActionBase>;
 using GraphQL.Server.Authorization.AspNetCore;
-using Libplanet.Explorer.GraphTypes;
-using Libplanet.Tx;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using NineChroniclesActionType = Libplanet.Action.PolymorphicAction<Nekoyume.Action.ActionBase>;

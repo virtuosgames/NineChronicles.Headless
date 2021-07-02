@@ -17,7 +17,6 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Bencodex.Types;
-using Libplanet;
 using Libplanet.Action;
 using Libplanet.Assets;
 using Nekoyume;

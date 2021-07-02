@@ -25,7 +25,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit.Abstractions;
 using RewardGold = NineChronicles.Headless.Tests.Common.Actions.EmptyAction;
-using Libplanet.Store.Trie;
 using Microsoft.AspNetCore.Http;
 using NCAction = Libplanet.Action.PolymorphicAction<Nekoyume.Action.ActionBase>;
 

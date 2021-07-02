@@ -41,11 +41,11 @@ namespace NineChronicles.Headless.GraphTypes
 
             Field<ActivationStatusMutation>(
                 name: "activationStatus", 
-                resolve: _ => new ActivationStatusMutation(nodeService).AuthorizeWith(GraphQLService.UserPolicyKey));
+                resolve: _ => standaloneContext.NineChroniclesNodeService).AuthorizeWith(GraphQLService.UserPolicyKey);
 
             Field<ActionMutation>(
                 name: "action", 
-                resolve: _ => new ActionMutation(nodeService).AuthorizeWith(GraphQLService.UserPolicyKey));
+                resolve: _ => standaloneContext.NineChroniclesNodeService).AuthorizeWith(GraphQLService.UserPolicyKey);
 
             Field<NonNullGraphType<BooleanGraphType>>(
                 name: "stageTx",
