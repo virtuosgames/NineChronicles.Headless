@@ -7,6 +7,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Lib9c\Lib9c.GraphQL\Lib9c.GraphQL.csproj" />
     <ProjectReference Include="..\Lib9c\Lib9c\Lib9c.csproj" />
     <ProjectReference Include="..\Lib9c\.Libplanet\Libplanet.Explorer\Libplanet.Explorer.csproj" />
     <ProjectReference Include="..\Libplanet.Headless\Libplanet.Headless.csproj" />

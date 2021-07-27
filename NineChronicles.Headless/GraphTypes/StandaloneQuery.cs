@@ -156,6 +156,11 @@ namespace NineChronicles.Headless.GraphTypes
                 resolve: context => new { }
             );
 
+            Field<Lib9c.GraphQL.Queries.RootQuery<NCAction>>(
+                name: "lib9cQuery",
+                resolve: context => new { }
+            );
+
             Field<NonNullGraphType<ValidationQuery>>(
                 name: "validation",
                 description: "The validation method provider for Libplanet types.",

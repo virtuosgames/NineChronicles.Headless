@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using GraphQL.Server;
-using GraphQL.Utilities;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -10,7 +9,7 @@ using Microsoft.Extensions.Hosting;
 using NineChronicles.Headless.GraphTypes;
 using NineChronicles.Headless.Middleware;
 using NineChronicles.Headless.Properties;
-using Serilog;
+using Lib9c.GraphQL;
 using NCAction = Libplanet.Action.PolymorphicAction<Nekoyume.Action.ActionBase>;
 
 namespace NineChronicles.Headless
@@ -110,6 +109,7 @@ namespace NineChronicles.Headless
                                     "role",
                                     "Admin")));
                 services.AddGraphTypes();
+                services.AddLib9c<NCAction>();
             }
 
             public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
