@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using Bencodex;
@@ -109,7 +110,9 @@ namespace NineChronicles.Headless.Tests.GraphTypes
 
             var apvPrivateKey = new PrivateKey();
             var apv = AppProtocolVersion.Sign(apvPrivateKey, 0);
-            var genesisBlock = BlockChain<EmptyAction>.MakeGenesisBlock();
+            var genesisBlock = BlockChain<EmptyAction>.MakeGenesisBlock(
+                HashAlgorithmType.Of<SHA256>()
+            );
 
             // 에러로 인하여 NineChroniclesNodeService 를 사용할 수 없습니다. https://git.io/JfS0M
             // 따라서 LibplanetNodeService로 비슷한 환경을 맞춥니다.
@@ -366,6 +369,7 @@ namespace NineChronicles.Headless.Tests.GraphTypes
 
             Block<PolymorphicAction<ActionBase>> genesis =
                 BlockChain<PolymorphicAction<ActionBase>>.MakeGenesisBlock(
+                    HashAlgorithmType.Of<SHA256>(),
                     new PolymorphicAction<ActionBase>[]
                     {
                         new InitializeStates(
@@ -470,100 +474,6 @@ namespace NineChronicles.Headless.Tests.GraphTypes
                 },
                 queryResult.Data
             );
-        }
-
-        [Fact]
-        public async Task NextTxNonce()
-        {
-            var userPrivateKey = new PrivateKey();
-            var userAddress = userPrivateKey.ToAddress();
-            var service = MakeMineChroniclesNodeService(userPrivateKey);
-            StandaloneContextFx.NineChroniclesNodeService = service;
-            StandaloneContextFx.BlockChain = service.Swarm?.BlockChain;
-
-            var blockChain = StandaloneContextFx.BlockChain!;
-            var query = $"query {{ nextTxNonce(address: \"{userAddress}\") }}";
-            var queryResult = await ExecuteQueryAsync(query);
-            Assert.Equal(
-                new Dictionary<string, object>
-                {
-                    ["nextTxNonce"] = 0L
-                },
-                queryResult.Data
-            );
-
-            blockChain.MakeTransaction(userPrivateKey, new PolymorphicAction<ActionBase>[] { });
-            queryResult = await ExecuteQueryAsync(query);
-            Assert.Equal(
-                new Dictionary<string, object>
-                {
-                    ["nextTxNonce"] = 1L
-                },
-                queryResult.Data
-            );
-        }
-
-        [Fact]
-        public async Task GetTx()
-        {
-            var userPrivateKey = new PrivateKey();
-            var userAddress = userPrivateKey.ToAddress();
-            var service = MakeMineChroniclesNodeService(userPrivateKey);
-            StandaloneContextFx.NineChroniclesNodeService = service;
-            StandaloneContextFx.BlockChain = service.Swarm!.BlockChain;
-
-            var blockChain = StandaloneContextFx.BlockChain;
-            var queryFormat = @"query {{
-                getTx(txId: ""{0}"") {{
-                    id
-                    nonce
-                    signer
-                    signature
-                    timestamp
-                    updatedAddresses
-                    actions {{
-                        inspection
-                    }}
-                }}
-            }}";
-            var queryResult = await ExecuteQueryAsync(string.Format(queryFormat, new TxId()));
-            Assert.Equal(
-                new Dictionary<string, object?>
-                {
-                    ["getTx"] = null
-                },
-                queryResult.Data
-            );
-
-            var action = new CreateAvatar2
-            {
-                index = 0,
-                hair = 1,
-                lens = 2,
-                ear = 3,
-                tail = 4,
-                name = "action",
-            };
-            var transaction = blockChain.MakeTransaction(userPrivateKey, new PolymorphicAction<ActionBase>[] { action });
-            blockChain.StageTransaction(transaction);
-            await blockChain.MineBlock(new Address());
-            queryResult = await ExecuteQueryAsync(string.Format(queryFormat, transaction.Id));
-            var tx = queryResult.Data
-                .As<Dictionary<string, object>>()["getTx"]
-                .As<Dictionary<string, object>>();
-
-            Assert.Equal(tx["id"], transaction.Id.ToString());
-            Assert.Equal(tx["nonce"], transaction.Nonce);
-            Assert.Equal(tx["signer"], transaction.Signer.ToString());
-            Assert.Equal(tx["signature"], ByteUtil.Hex(transaction.Signature));
-            Assert.Equal(tx["timestamp"], transaction.Timestamp.ToString());
-            Assert.Equal(tx["updatedAddresses"], transaction.UpdatedAddresses.Select(a => a.ToString()));
-
-            var plainValue = tx["actions"]
-                .As<List<object>>()
-                .First()
-                .As<Dictionary<string, object>>()["inspection"];
-            Assert.Equal(transaction.Actions.First().PlainValue.Inspection, plainValue);
         }
 
         [Theory]
@@ -741,6 +651,7 @@ namespace NineChronicles.Headless.Tests.GraphTypes
                 new LibplanetNodeServiceProperties<PolymorphicAction<ActionBase>>().MaximumTransactions).BlockAction;
             Block<PolymorphicAction<ActionBase>> genesis =
                 BlockChain<PolymorphicAction<ActionBase>>.MakeGenesisBlock(
+                    HashAlgorithmType.Of<SHA256>(),
                     new PolymorphicAction<ActionBase>[]
                     {
                         new InitializeStates(
