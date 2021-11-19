@@ -16,6 +16,7 @@ using Lib9c.Renderer;
 using Libplanet;
 using Libplanet.Blocks;
 using MagicOnion.Client;
+using MessagePack;
 using Microsoft.Extensions.Hosting;
 using Nekoyume.Action;
 using Nekoyume.Model.State;
@@ -138,18 +139,9 @@ namespace NineChronicles.Headless
                 .Subscribe(
                 async ev =>
                 {
-                    var formatter = new BinaryFormatter();
-                    using var c = new MemoryStream();
-                    using var df = new DeflateStream(c, System.IO.Compression.CompressionLevel.Fastest);
-
                     try
                     {
-                        // FIXME Strip shop state from aev due to its size.
-                        //       we should remove this code after resizing it.
-                        ev.PreviousStates = ev.PreviousStates.SetState(ShopState.Address, new Null());
-                        ev.OutputStates = ev.OutputStates.SetState(ShopState.Address, new Null());
-                        formatter.Serialize(df, ev);
-                        await client.BroadcastRenderAsync(c.ToArray());
+                        await client.BroadcastRenderAsync(MessagePackSerializer.Serialize(ev));
                     }
                     catch (SerializationException se)
                     {
@@ -169,18 +161,9 @@ namespace NineChronicles.Headless
                 .Subscribe(
                 async ev =>
                 {
-                    var formatter = new BinaryFormatter();
-                    using var c = new MemoryStream();
-                    using var df = new DeflateStream(c, System.IO.Compression.CompressionLevel.Fastest);
-
                     try
                     {
-                        // FIXME Strip shop state from aev due to its size.
-                        //       we should remove this code after resizing it.
-                        ev.PreviousStates = ev.PreviousStates.SetState(ShopState.Address, new Null());
-                        ev.OutputStates = ev.OutputStates.SetState(ShopState.Address, new Null());
-                        formatter.Serialize(df, ev);
-                        await client.BroadcastUnrenderAsync(c.ToArray());
+                        await client.BroadcastUnrenderAsync(MessagePackSerializer.Serialize(ev));
                     }
                     catch (SerializationException se)
                     {
