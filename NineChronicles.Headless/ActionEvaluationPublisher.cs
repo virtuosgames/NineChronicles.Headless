@@ -144,7 +144,7 @@ namespace NineChronicles.Headless
                     {
                         PolymorphicAction<ActionBase>? pa = null;
                         var extra = new Dictionary<string, IValue>();
-                        if (!(ev.Action is null))
+                        if (!(ev.Action is RewardGold))
                         {
                             pa = new PolymorphicAction<ActionBase>(ev.Action);
                             if (ev.Action is RankingBattle rb)
@@ -167,11 +167,11 @@ namespace NineChronicles.Headless
                             {
                                 extra[nameof(Buy.errors)] = new List(
                                     buy.errors
-                                    .Select((tuple, _) => new List
+                                    .Select(tuple => new List(new []
                                     {
                                         tuple.orderId.Serialize(),
                                         tuple.errorCode.Serialize()
-                                    })
+                                    }))
                                     .Cast<IValue>()
                                 );
                             }
@@ -198,7 +198,7 @@ namespace NineChronicles.Headless
                 async ev =>
                 {
                     PolymorphicAction<ActionBase>? pa = null;
-                    if (!(ev.Action is null))
+                    if (!(ev.Action is RewardGold))
                     {
                         pa = new PolymorphicAction<ActionBase>(ev.Action);
                     }
