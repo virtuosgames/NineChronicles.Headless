@@ -14,6 +14,7 @@ using Bencodex.Types;
 using Grpc.Core;
 using Lib9c.Renderer;
 using Libplanet;
+using Libplanet.Action;
 using Libplanet.Blocks;
 using MagicOnion.Client;
 using MessagePack;
@@ -141,7 +142,42 @@ namespace NineChronicles.Headless
                 {
                     try
                     {
-                        await client.BroadcastRenderAsync(MessagePackSerializer.Serialize(ev));
+                        PolymorphicAction<ActionBase>? pa = null;
+                        var extra = new Dictionary<string, IValue>();
+                        if (!(ev.Action is null))
+                        {
+                            pa = new PolymorphicAction<ActionBase>(ev.Action);
+                            if (ev.Action is RankingBattle rb)
+                            {
+                                if (rb.EnemyAvatarState is { } enemyAvatarState)
+                                {
+                                    extra[nameof(RankingBattle.EnemyAvatarState)] = enemyAvatarState.Serialize();
+                                }
+                                if (rb.EnemyArenaInfo is { } enemyArenaInfo)
+                                {
+                                    extra[nameof(RankingBattle.EnemyArenaInfo)] = enemyArenaInfo.Serialize();
+                                }
+                                if (rb.ArenaInfo is { } arenaInfo)
+                                {
+                                    extra[nameof(RankingBattle.ArenaInfo)] = arenaInfo.Serialize();
+                                }
+                            }
+
+                            if (ev.Action is Buy buy)
+                            {
+                                extra[nameof(Buy.errors)] = new List(
+                                    buy.errors
+                                    .Select((tuple, _) => new List
+                                    {
+                                        tuple.orderId.Serialize(),
+                                        tuple.errorCode.Serialize()
+                                    })
+                                    .Cast<IValue>()
+                                );
+                            }
+                        }
+                        var eval = new NCActionEvaluation(pa, ev.Signer, ev.BlockIndex, ev.OutputStates, ev.Exception, ev.PreviousStates, ev.RandomSeed, extra);
+                        await client.BroadcastRenderAsync(MessagePackSerializer.Serialize(eval));
                     }
                     catch (SerializationException se)
                     {
@@ -161,9 +197,23 @@ namespace NineChronicles.Headless
                 .Subscribe(
                 async ev =>
                 {
+                    PolymorphicAction<ActionBase>? pa = null;
+                    if (!(ev.Action is null))
+                    {
+                        pa = new PolymorphicAction<ActionBase>(ev.Action);
+                    }
                     try
                     {
-                        await client.BroadcastUnrenderAsync(MessagePackSerializer.Serialize(ev));
+                        var eval = new NCActionEvaluation(pa,
+                            ev.Signer,
+                            ev.BlockIndex,
+                            ev.OutputStates,
+                            ev.Exception,
+                            ev.PreviousStates,
+                            ev.RandomSeed,
+                            new Dictionary<string, IValue>()
+                        );
+                        await client.BroadcastUnrenderAsync(MessagePackSerializer.Serialize(eval));
                     }
                     catch (SerializationException se)
                     {
