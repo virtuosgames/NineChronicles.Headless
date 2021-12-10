@@ -200,7 +200,6 @@ namespace NineChronicles.Headless.GraphTypes
             blockRenderer.BlockSubject.Subscribe(RenderBlock);
 
             ActionRenderer actionRenderer = standaloneContext.NineChroniclesNodeService!.ActionRenderer;
-            actionRenderer.EveryRender<ActionBase>().Subscribe(RenderAction);
             actionRenderer.EveryRender<MonsterCollect>().Subscribe(RenderMonsterCollectionStateSubject);
             actionRenderer.EveryRender<CancelMonsterCollect>().Subscribe(RenderMonsterCollectionStateSubject);
             actionRenderer.EveryRender<ClaimMonsterCollectionReward>().Subscribe(RenderMonsterCollectionStateSubject);
@@ -233,7 +232,9 @@ namespace NineChronicles.Headless.GraphTypes
         {
             return _subject.AsObservable();
         }
-        private void RenderBlock((Block<PolymorphicAction<ActionBase>> OldTip, Block<PolymorphicAction<ActionBase>> NewTip) pair)
+
+        private void RenderBlock(
+            (Block<PolymorphicAction<ActionBase>> OldTip, Block<PolymorphicAction<ActionBase>> NewTip) pair)
         {
             _subject.OnNext(new TipChanged
                 {
@@ -247,12 +248,13 @@ namespace NineChronicles.Headless.GraphTypes
                     $"{nameof(StandaloneContext.NineChroniclesNodeService)} is null.");
             }
 
-            BlockChain<PolymorphicAction<ActionBase>> blockChain = StandaloneContext.NineChroniclesNodeService.BlockChain;
+            BlockChain<PolymorphicAction<ActionBase>> blockChain =
+                StandaloneContext.NineChroniclesNodeService.BlockChain;
             DelayedRenderer<PolymorphicAction<ActionBase>>? delayedRenderer = blockChain.GetDelayedRenderer();
             BlockHash? offset = delayedRenderer?.Tip?.Hash;
             Currency currency =
                 new GoldCurrencyState(
-                    (Dictionary) blockChain.GetState(Addresses.GoldCurrency, offset)
+                    (Dictionary)blockChain.GetState(Addresses.GoldCurrency, offset)
                 ).Currency;
             var rewardSheet = new MonsterCollectionRewardSheet();
             var csv = blockChain.GetState(
@@ -301,8 +303,9 @@ namespace NineChronicles.Headless.GraphTypes
             if (blockChain.GetState(agentAddress, offset) is Dictionary agentDict)
             {
                 AgentState agentState = new AgentState(agentDict);
-                Address deriveAddress = MonsterCollectionState.DeriveAddress(agentAddress, agentState.MonsterCollectionRound);
-                if (blockChain.GetState(deriveAddress, offset) is Dictionary collectDict && 
+                Address deriveAddress =
+                    MonsterCollectionState.DeriveAddress(agentAddress, agentState.MonsterCollectionRound);
+                if (blockChain.GetState(deriveAddress, offset) is Dictionary collectDict &&
                     agentState.avatarAddresses.Any())
                 {
                     rewardSheet.Set(csv);
@@ -314,27 +317,13 @@ namespace NineChronicles.Headless.GraphTypes
                     );
 
                     var monsterCollectionStatus = new MonsterCollectionStatus(
-                        balance, 
+                        balance,
                         rewards,
                         tipIndex,
                         monsterCollectionState.IsLocked(tipIndex)
                     );
                     StandaloneContext.MonsterCollectionStatusSubject.OnNext(monsterCollectionStatus);
                 }
-            }
-        }
-
-        private void RenderAction(ActionBase.ActionEvaluation<ActionBase> eval)
-        {
-            if (StandaloneContext.NineChroniclesNodeService is null)
-            {
-                throw new InvalidOperationException(
-                    $"{nameof(StandaloneContext.NineChroniclesNodeService)} is null.");
-            }
-
-            if (StandaloneContext.NineChroniclesNodeService.MinerPrivateKey is null)
-            {
-                Log.Information("PrivateKey is not set. please call SetPrivateKey() first");
             }
         }
 
