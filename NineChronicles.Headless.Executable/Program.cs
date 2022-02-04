@@ -21,6 +21,7 @@ using Serilog;
 using Serilog.Formatting.Compact;
 using System;
 using System.IO;
+using System.Runtime;
 using System.Threading.Tasks;
 
 namespace NineChronicles.Headless.Executable
@@ -38,6 +39,7 @@ namespace NineChronicles.Headless.Executable
 
         static async Task Main(string[] args)
         {
+            Console.WriteLine($"{nameof(GCSettings.IsServerGC)} = {GCSettings.IsServerGC}");
             // https://docs.microsoft.com/ko-kr/aspnet/core/grpc/troubleshoot?view=aspnetcore-6.0#call-insecure-grpc-services-with-net-core-client
             AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
 #if SENTRY || ! DEBUG
