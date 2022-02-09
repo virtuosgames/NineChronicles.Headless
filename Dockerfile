@@ -18,7 +18,7 @@ RUN dotnet restore NineChronicles.Headless.Executable
 COPY . ./
 RUN dotnet publish NineChronicles.Headless.Executable/NineChronicles.Headless.Executable.csproj \
     -c Release \
-    -r linux-x64 \
+    -r linux-arm64 \
     -o out \
     --self-contained \
     --version-suffix $COMMIT
