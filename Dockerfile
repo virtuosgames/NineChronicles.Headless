@@ -24,7 +24,7 @@ RUN dotnet publish NineChronicles.Headless.Executable/NineChronicles.Headless.Ex
     --version-suffix $COMMIT
 
 # Build runtime image
-FROM mcr.microsoft.com/dotnet/aspnet:3.1-bullseye-slim-arm64v8
+FROM --platform=linux/arm64 mcr.microsoft.com/dotnet/aspnet:3.1-bullseye-slim-arm64v8
 WORKDIR /app
 RUN apt-get update && apt-get install -y libc6-dev
 COPY --from=build-env /app/out .
