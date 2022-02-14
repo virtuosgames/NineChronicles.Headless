@@ -22,7 +22,7 @@ jobs:
       - name: cleanup
         run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
       - name: build
-        run: docker build . -t planetariumhq/ninechronicles-headless:git-${{ github.sha }} --build-arg COMMIT=git-${{ github.sha }}
+        run: docker build -f Dockerfile.arm64v8 . -t planetariumhq/ninechronicles-headless:git-${{ github.sha }} --build-arg COMMIT=git-${{ github.sha }}
       - name: push git-version
         run: docker push planetariumhq/ninechronicles-headless:git-${{ github.sha }}
 
