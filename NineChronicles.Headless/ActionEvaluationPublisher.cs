@@ -193,8 +193,11 @@ namespace NineChronicles.Headless
                         var eval = new NCActionEvaluation(pa, ev.Signer, ev.BlockIndex, ev.OutputStates, ev.Exception, ev.PreviousStates, ev.RandomSeed, extra);
                         var encoded = MessagePackSerializer.Serialize(eval);
                         var c = new MemoryStream();
-                        await using var df = new DeflateStream(c, CompressionLevel.Fastest);
-                        df.Write(encoded, 0, encoded.Length);
+                        using (var df = new DeflateStream(c, CompressionLevel.Fastest))
+                        {
+                            df.Write(encoded, 0, encoded.Length);
+                        }
+
                         var compressed = c.ToArray();
                         Log.Information(
                             "[{ClientAddress}] #{BlockIndex} Broadcasting render since the given action {Action}. eval size: {Size}",
