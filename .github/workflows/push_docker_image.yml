@@ -7,6 +7,7 @@ on:
       - rc-*
       - 9c-main
       - development
+      - v100120-0.28.x
     tags:
       - v*
 
