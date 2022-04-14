@@ -8,6 +8,7 @@ on:
       - 9c-main
       - development
       - previewnet
+      - happy-net6
     tags:
       - v*
 
@@ -28,22 +29,19 @@ jobs:
           docker login \
             --username '${{ secrets.DOCKER_USERNAME }}' \
             --password '${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}'
-      - name: setup-qemu
-        run: |
-          docker run --rm --privileged multiarch/qemu-user-static \
-            --reset \
-            -p yes
       - name: build-and-push-amd64
         run: |
-          docker build . \
-            -f Dockerfile.amd64 \
+          docker buildx build . \
+            -f Dockerfile \
+            --platform linux/amd64 \
             -t $DOCKER_REPO:git-${{ github.sha }}-amd64 \
             --build-arg COMMIT=git-${{ github.sha }}
           docker push $DOCKER_REPO:git-${{ github.sha }}-amd64
       - name: build-and-push-arm64v8
         run: |
-          docker build . \
-            -f Dockerfile.arm64v8 \
+          docker buildx build . \
+            -f Dockerfile \
+            --platform linux/arm64 \
             -t $DOCKER_REPO:git-${{ github.sha }}-arm64v8 \
             --build-arg COMMIT=git-${{ github.sha }}
           docker push $DOCKER_REPO:git-${{ github.sha }}-arm64v8

@@ -1,6 +1,9 @@
-FROM mcr.microsoft.com/dotnet/core/sdk:3.1 AS build-env
+FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
 WORKDIR /app
 ARG COMMIT
+
+# https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
+ARG TARGETPLATFORM
 
 # Copy csproj and restore as distinct layers
 COPY ./Lib9c/Lib9c/Lib9c.csproj ./Lib9c/
@@ -16,15 +19,17 @@ RUN dotnet restore NineChronicles.Headless.Executable
 
 # Copy everything else and build
 COPY . ./
+SHELL ["/bin/bash", "-c"]
+RUN echo "$TARGETPLATFORM"
 RUN dotnet publish NineChronicles.Headless.Executable/NineChronicles.Headless.Executable.csproj \
     -c Release \
-    -r linux-x64 \
+    -r `case $TARGETPLATFORM in "linux/arm64") echo "linux-arm64" ;; "linux/amd64") echo "linux-x64" ;; esac` \
     -o out \
     --self-contained \
     --version-suffix $COMMIT
 
 # Build runtime image
-FROM mcr.microsoft.com/dotnet/core/aspnet:3.1
+FROM mcr.microsoft.com/dotnet/aspnet:6.0-bullseye-slim
 WORKDIR /app
 RUN apt-get update && apt-get install -y libc6-dev
 COPY --from=build-env /app/out .
