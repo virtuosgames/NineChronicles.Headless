@@ -8,6 +8,7 @@ on:
       - 9c-main
       - development
       - previewnet
+      - v100173-datadog-agent
     tags:
       - v*
 
