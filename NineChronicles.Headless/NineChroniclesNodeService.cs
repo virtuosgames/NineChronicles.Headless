@@ -303,6 +303,8 @@ namespace NineChronicles.Headless
                     context.DifferentAppProtocolVersionEncounterSubject.OnNext(
                         new DifferentAppProtocolVersionEncounter(peer, peerVersion, localVersion)
                     );
+
+                    return false;
                 };
 
             properties.Libplanet.NodeExceptionOccurred =
