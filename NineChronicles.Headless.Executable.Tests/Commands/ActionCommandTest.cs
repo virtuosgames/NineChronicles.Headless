@@ -116,7 +116,7 @@ namespace NineChronicles.Headless.Executable.Tests.Commands
             var recipientPrivateKey = new PrivateKey();
             var filePath = Path.Combine(Path.GetTempPath(), Path.GetTempFileName());
             var resultCode = _command.TransferAsset(
-                senderPrivateKey.ToAddress().ToHex(), 
+                senderPrivateKey.ToAddress().ToHex(),
                 recipientPrivateKey.ToAddress().ToHex(),
                 Convert.ToString(amount),
                 filePath,
