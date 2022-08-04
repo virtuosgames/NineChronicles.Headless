@@ -9,6 +9,7 @@ on:
       - development
       - previewnet
       - qa-*
+      - v100260-fix
     tags:
       - v*
 
