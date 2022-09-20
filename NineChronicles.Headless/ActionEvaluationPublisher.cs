@@ -6,8 +6,8 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Reactive.Concurrency;
 using System.Runtime.Serialization;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
 using System.Threading.Tasks;
 using Bencodex;
@@ -94,137 +94,146 @@ namespace NineChronicles.Headless
                 Log.Information("[{ClientAddress}] AddClient", clientAddress);
             }
 
-            _blockRenderer.BlockSubject.Subscribe(
-                async pair =>
-                {
-                    try
+            _blockRenderer.BlockSubject
+                .SubscribeOn(NewThreadScheduler.Default)
+                .Subscribe(
+                    async pair =>
                     {
-                        await client.BroadcastRenderBlockAsync(
-                            Codec.Encode(pair.OldTip.MarshalBlock()),
-                            Codec.Encode(pair.NewTip.MarshalBlock())
-                        );
+                        try
+                        {
+                            await client.BroadcastRenderBlockAsync(
+                                Codec.Encode(pair.OldTip.MarshalBlock()),
+                                Codec.Encode(pair.NewTip.MarshalBlock())
+                            );
+                        }
+                        catch (Exception e)
+                        {
+                            // FIXME add logger as property
+                            Log.Error(e, "Skip broadcasting block render due to the unexpected exception");
+                        }
                     }
-                    catch (Exception e)
-                    {
-                        // FIXME add logger as property
-                        Log.Error(e, "Skip broadcasting blcok render due to the unexpected exception");
-                    }
-                }
-            );
+                );
 
-            _blockRenderer.ReorgSubject.Subscribe(
-                async ev =>
-                {
-                    try
+            _blockRenderer.ReorgSubject
+                .SubscribeOn(NewThreadScheduler.Default)
+                .Subscribe(
+                    async ev =>
                     {
-                        await client.ReportReorgAsync(
-                            Codec.Encode(ev.OldTip.MarshalBlock()),
-                            Codec.Encode(ev.NewTip.MarshalBlock()),
-                            Codec.Encode(ev.Branchpoint.MarshalBlock())
-                        );
+                        try
+                        {
+                            await client.ReportReorgAsync(
+                                Codec.Encode(ev.OldTip.MarshalBlock()),
+                                Codec.Encode(ev.NewTip.MarshalBlock()),
+                                Codec.Encode(ev.Branchpoint.MarshalBlock())
+                            );
+                        }
+                        catch (Exception e)
+                        {
+                            // FIXME add logger as property
+                            Log.Error(e, "Skip broadcasting reorg due to the unexpected exception");
+                        }
                     }
-                    catch (Exception e)
-                    {
-                        // FIXME add logger as property
-                        Log.Error(e, "Skip broadcasting reorg due to the unexpected exception");
-                    }
-                }
-            );
+                );
 
-            _blockRenderer.ReorgEndSubject.Subscribe(
-                async ev =>
-                {
-                    try
+            _blockRenderer.ReorgEndSubject
+                .SubscribeOn(NewThreadScheduler.Default)
+                .Subscribe(
+                    async ev =>
                     {
-                        await client.ReportReorgEndAsync(
-                            Codec.Encode(ev.OldTip.MarshalBlock()),
-                            Codec.Encode(ev.NewTip.MarshalBlock()),
-                            Codec.Encode(ev.Branchpoint.MarshalBlock())
-                        );
+                        try
+                        {
+                            await client.ReportReorgEndAsync(
+                                Codec.Encode(ev.OldTip.MarshalBlock()),
+                                Codec.Encode(ev.NewTip.MarshalBlock()),
+                                Codec.Encode(ev.Branchpoint.MarshalBlock())
+                            );
+                        }
+                        catch (Exception e)
+                        {
+                            // FIXME add logger as property
+                            Log.Error(e, "Skip broadcasting reorg end due to the unexpected exception");
+                        }
                     }
-                    catch (Exception e)
-                    {
-                        // FIXME add logger as property
-                        Log.Error(e, "Skip broadcasting reorg end due to the unexpected exception");
-                    }
-                }
-            );
+                );
+            
             _actionRenderer.EveryRender<ActionBase>()
                 .Where(ev => ContainsAddressToBroadcast(ev, clientAddress))
+                .SubscribeOn(NewThreadScheduler.Default)
                 .Subscribe(
-                async ev =>
-                {
-                    try
+                    async ev =>
                     {
-                        NineChroniclesActionType? pa = null;
-                        var extra = new Dictionary<string, IValue>();
-                        if (!(ev.Action is RewardGold))
+                        try
                         {
-                            pa = new PolymorphicAction<ActionBase>(ev.Action);
-                            if (ev.Action is BattleArena ba && ev.Exception is null)
+                            NineChroniclesActionType? pa = null;
+                            var extra = new Dictionary<string, IValue>();
+                            if (!(ev.Action is RewardGold))
                             {
-                                if (ba.ExtraMyArenaPlayerDigest is { } myDigest)
+                                pa = new PolymorphicAction<ActionBase>(ev.Action);
+                                if (ev.Action is BattleArena ba && ev.Exception is null)
                                 {
-                                    extra[nameof(BattleArena.ExtraMyArenaPlayerDigest)] = myDigest.Serialize();
-                                }
-
-                                if (ba.ExtraEnemyArenaPlayerDigest is { } enemyDigest)
-                                {
-                                    extra[nameof(BattleArena.ExtraEnemyArenaPlayerDigest)] = enemyDigest.Serialize();
-                                }
-
-                                if (ba.ExtraPreviousMyScore is { } myScore)
-                                {
-                                    extra[nameof(BattleArena.ExtraPreviousMyScore)] = myScore.Serialize();
-                                }
-                            }
-
-                            if (ev.Action is Buy buy)
-                            {
-                                extra[nameof(Buy.errors)] = new List(
-                                    buy.errors
-                                    .Select(tuple => new List(new[]
+                                    if (ba.ExtraMyArenaPlayerDigest is { } myDigest)
                                     {
-                                        tuple.orderId.Serialize(),
-                                        tuple.errorCode.Serialize()
-                                    }))
-                                    .Cast<IValue>()
-                                );
-                            }
-                        }
-                        var eval = new NCActionEvaluation(pa, ev.Signer, ev.BlockIndex, ev.OutputStates, ev.Exception, ev.PreviousStates, ev.RandomSeed, extra);
-                        var encoded = MessagePackSerializer.Serialize(eval);
-                        var c = new MemoryStream();
-                        using (var df = new DeflateStream(c, CompressionLevel.Fastest))
-                        {
-                            df.Write(encoded, 0, encoded.Length);
-                        }
+                                        extra[nameof(BattleArena.ExtraMyArenaPlayerDigest)] = myDigest.Serialize();
+                                    }
 
-                        var compressed = c.ToArray();
-                        Log.Information(
-                            "[{ClientAddress}] #{BlockIndex} Broadcasting render since the given action {Action}. eval size: {Size}",
-                            clientAddress,
-                            ev.BlockIndex,
-                            ev.Action.GetType(),
-                            compressed.LongLength
-                        );
-                        await client.BroadcastRenderAsync(compressed);
+                                    if (ba.ExtraEnemyArenaPlayerDigest is { } enemyDigest)
+                                    {
+                                        extra[nameof(BattleArena.ExtraEnemyArenaPlayerDigest)] = enemyDigest.Serialize();
+                                    }
+
+                                    if (ba.ExtraPreviousMyScore is { } myScore)
+                                    {
+                                        extra[nameof(BattleArena.ExtraPreviousMyScore)] = myScore.Serialize();
+                                    }
+                                }
+
+                                if (ev.Action is Buy buy)
+                                {
+                                    extra[nameof(Buy.errors)] = new List(
+                                        buy.errors
+                                        .Select(tuple => new List(new[]
+                                        {
+                                            tuple.orderId.Serialize(),
+                                            tuple.errorCode.Serialize()
+                                        }))
+                                        .Cast<IValue>()
+                                    );
+                                }
+                            }
+                            var eval = new NCActionEvaluation(pa, ev.Signer, ev.BlockIndex, ev.OutputStates, ev.Exception, ev.PreviousStates, ev.RandomSeed, extra);
+                            var encoded = MessagePackSerializer.Serialize(eval);
+                            var c = new MemoryStream();
+                            using (var df = new DeflateStream(c, CompressionLevel.Fastest))
+                            {
+                                df.Write(encoded, 0, encoded.Length);
+                            }
+
+                            var compressed = c.ToArray();
+                            Log.Information(
+                                "[{ClientAddress}] #{BlockIndex} Broadcasting render since the given action {Action}. eval size: {Size}",
+                                clientAddress,
+                                ev.BlockIndex,
+                                ev.Action.GetType(),
+                                compressed.LongLength
+                            );
+                            await client.BroadcastRenderAsync(compressed);
+                        }
+                        catch (SerializationException se)
+                        {
+                            // FIXME add logger as property
+                            Log.Error(se, "[{ClientAddress}] Skip broadcasting render since the given action isn't serializable", clientAddress);
+                        }
+                        catch (Exception e)
+                        {
+                            // FIXME add logger as property
+                            Log.Error(e, "[{ClientAddress}] Skip broadcasting render due to the unexpected exception", clientAddress);
+                        }
                     }
-                    catch (SerializationException se)
-                    {
-                        // FIXME add logger as property
-                        Log.Error(se, "[{ClientAddress}] Skip broadcasting render since the given action isn't serializable", clientAddress);
-                    }
-                    catch (Exception e)
-                    {
-                        // FIXME add logger as property
-                        Log.Error(e, "[{ClientAddress}] Skip broadcasting render due to the unexpected exception", clientAddress);
-                    }
-                }
                 );
 
             _actionRenderer.EveryUnrender<ActionBase>()
                 .Where(ev => ContainsAddressToBroadcast(ev, clientAddress))
+                .SubscribeOn(NewThreadScheduler.Default)
                 .Subscribe(
                 async ev =>
                 {
@@ -273,6 +282,7 @@ namespace NineChronicles.Headless
                     }
                 }
                 );
+
             _exceptionRenderer.EveryException().Subscribe(
                 async tuple =>
                 {
@@ -289,27 +299,29 @@ namespace NineChronicles.Headless
                 }
             );
 
-            _nodeStatusRenderer.EveryChangedStatus().Subscribe(
-                async isPreloadStarted =>
-                {
-                    try
+            _nodeStatusRenderer.EveryChangedStatus()
+                .SubscribeOn(NewThreadScheduler.Default)
+                .Subscribe(
+                    async isPreloadStarted =>
                     {
-                        if (isPreloadStarted)
+                        try
                         {
-                            await client.PreloadStartAsync();
+                            if (isPreloadStarted)
+                            {
+                                await client.PreloadStartAsync();
+                            }
+                            else
+                            {
+                                await client.PreloadEndAsync();
+                            }
                         }
-                        else
+                        catch (Exception e)
                         {
-                            await client.PreloadEndAsync();
+                            // FIXME add logger as property
+                            Log.Error(e, "Skip broadcasting status change due to the unexpected exception");
                         }
                     }
-                    catch (Exception e)
-                    {
-                        // FIXME add logger as property
-                        Log.Error(e, "Skip broadcasting status change due to the unexpected exception");
-                    }
-                }
-            );
+                );
         }
 
         public override async Task StopAsync(CancellationToken cancellationToken)
