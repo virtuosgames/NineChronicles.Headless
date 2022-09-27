@@ -10,6 +10,7 @@ on:
       - previewnet
       - qa-*
       - 2022q3-worldboss
+      - v100301-rename-buff-sheet
     tags:
       - v*
 
